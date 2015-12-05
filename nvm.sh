@@ -1232,21 +1232,27 @@ nvm_install_node_source() {
     MAKE_CXX="CXX=c++"
   fi
 
-  if [ "_$NVM_OS" = "_linux" ]; then
-    CPU_THREADS="$(grep -c 'core id' /proc/cpuinfo)"
-  elif [ "_$NVM_OS" = "_freebsd" ] || [ "_$NVM_OS" = "_darwin" ]; then
-    CPU_THREADS="$(sysctl -n hw.ncpu)"
-  elif [ "_$NVM_OS" = "_sunos" ]; then
-    CPU_THREADS="$(psrinfo | wc -l)"
-  fi
   echo $CPU_THREADS | egrep -q '^[0-9]{1,}$' &> /dev/null
   thread_valid=$?
   if [ -z "$CPU_THREADS" ] || [[ $thread_valid -ne 0 ]] ; then
-    echo "Can not determine how many thread(s) we can use, set to only 1 now." 1>&2
-    echo "Please report an issue on GitHub to help us make it better and run it faster on your computer!" 1>&2
-    MAKE_JOBS="1"
+    if [ "_$NVM_OS" = "_linux" ]; then
+      CPU_THREADS="$(grep -c 'core id' /proc/cpuinfo)"
+    elif [ "_$NVM_OS" = "_freebsd" ] || [ "_$NVM_OS" = "_darwin" ]; then
+      CPU_THREADS="$(sysctl -n hw.ncpu)"
+    elif [ "_$NVM_OS" = "_sunos" ]; then
+      CPU_THREADS="$(psrinfo | wc -l)"
+    fi
+    echo $CPU_THREADS | egrep -q '^[0-9]{1,}$' &> /dev/null
+    thread_valid=$?
+    if [ -z "$CPU_THREADS" ] || [[ $thread_valid -ne 0 ]] ; then
+      echo "Can not determine how many thread(s) we can use, set to only 1 now." 1>&2
+      echo "Please report an issue on GitHub to help us make it better and run it faster on your computer!" 1>&2
+      MAKE_JOBS="1"
+    else
+      MAKE_JOBS=$(($CPU_THREADS - 1))
+    fi
   else
-    MAKE_JOBS=$(($CPU_THREADS - 1))
+    MAKE_JOBS=$CPU_THREADS
   fi
   local tmpdir
   tmpdir="$NVM_DIR/src"
@@ -1562,6 +1568,13 @@ nvm() {
       if [ "_$1" = "_-s" ]; then
         nobinary=1
         shift
+        if [ "_$1" = "_-j" ]; then
+          shift
+          CPU_THREADS=$1
+          shift
+        else
+          unset CPU_THREADS
+        fi
       fi
 
       provided_version="$1"
