@@ -22,7 +22,7 @@ before_install:
   - curl --version
   - wget --version
   - if [ -n "${SHELLCHECK-}" ]; then stack setup && stack install ShellCheck && shellcheck --version ; fi
-  - ln -s /usr/bin/clang-3.8 $HOME/bin/clang && ln -s /usr/bin/clang++-3.8 $HOME/bin/clang++
+  - mkdir -p $HOME/bin && ln -s /usr/bin/clang-3.8 $HOME/bin/clang && ln -s /usr/bin/clang++-3.8 $HOME/bin/clang++
 install:
   - (mkdir /tmp/urchin && cd /tmp/urchin && curl -s "$(curl -s https://registry.npmjs.com/urchin | grep -Eo '"tarball":\s*"[^"]+"' | tail -n 1 | awk -F\" '{ print $4 }')" -O && tar -x -f urchin*)
   - chmod +x /tmp/urchin/package/urchin
