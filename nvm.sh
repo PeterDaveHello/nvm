@@ -506,12 +506,9 @@ nvm_strip_path() {
     return 1
   fi
   nvm_echo "${1-}" | command sed \
-    -e "s#${NVM_DIR}/[^/]*${2-}[^:]*:##g" \
-    -e "s#:${NVM_DIR}/[^/]*${2-}[^:]*##g" \
-    -e "s#${NVM_DIR}/[^/]*${2-}[^:]*##g" \
-    -e "s#${NVM_DIR}/versions/[^/]*/[^/]*${2-}[^:]*:##g" \
-    -e "s#:${NVM_DIR}/versions/[^/]*/[^/]*${2-}[^:]*##g" \
-    -e "s#${NVM_DIR}/versions/[^/]*/[^/]*${2-}[^:]*##g"
+    -e "s#${NVM_DIR}/(versions/[^/]*/)?[^/]*${2-}[^:]*:##g" \
+    -e "s#:${NVM_DIR}/(versions/[^/]*/)?[^/]*${2-}[^:]*##g" \
+    -e "s#${NVM_DIR}/(versions/[^/]*/)?[^/]*${2-}[^:]*##g"
 }
 
 nvm_prepend_path() {
