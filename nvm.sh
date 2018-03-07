@@ -1906,6 +1906,9 @@ nvm_get_make_jobs() {
       NVM_CPU_CORES="$(pmcycles -m | wc -l)"
     ;;
   esac
+  if [ -z "$NVM_CPU_CORES" ] && nvm_has "nproc" ; then
+    NVM_CPU_CORES="$(nproc)"
+  fi
   if ! nvm_is_natural_num "$NVM_CPU_CORES" ; then
     nvm_err 'Can not determine how many core(s) are available, running in single-threaded mode.'
     nvm_err 'Please report an issue on GitHub to help us make nvm run faster on your computer!'
