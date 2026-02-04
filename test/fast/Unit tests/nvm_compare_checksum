@@ -1,7 +1,8 @@
 #!/bin/sh
 
 cleanup () {
-  unset -f nvm_compute_checksum
+  unset -f nvm_compute_checksum nvm_get_checksum_binary
+  unset NVM_SKIP_CHECKSUM
 }
 die () { echo "$@" ; cleanup ; exit 1; }
 
@@ -12,6 +13,10 @@ set -ex
 
 nvm_compute_checksum() {
   echo
+}
+
+nvm_get_checksum_binary() {
+  return 1
 }
 
 set +x
@@ -39,13 +44,41 @@ EXPECTED_OUTPUT='Provided checksum to compare to is empty.'
 [ "${EXIT_CODE}" = 2 ] || die "expected to exit with code 2, got ${EXIT_CODE}"
 
 set +x
-OUTPUT="$(nvm_compare_checksum ../../../nvm.sh checksum 2>&1 >/dev/null)"
-EXIT_CODE="$(nvm_compare_checksum ../../../nvm.sh checksum >/dev/null 2>&1 ; echo $?)"
+set +e
+OUTPUT="$(nvm_compare_checksum ../../../nvm.sh checksum 2>&1 >/dev/null || echo)"
+EXIT_CODE="$(nvm_compare_checksum ../../../nvm.sh checksum >/dev/null 2>&1 || echo $?)"
+set -e
 set -x
 EXPECTED_OUTPUT="Computed checksum of '../../../nvm.sh' is empty.
-WARNING: Continuing *without checksum verification*"
+ERROR: No checksum binary found. Aborting."
+[ "${OUTPUT}" = "${EXPECTED_OUTPUT}" ] || die "expected >${EXPECTED_OUTPUT}<, got >${OUTPUT}<"
+[ "${EXIT_CODE}" = 5 ] || die "expected to exit with code 5, got ${EXIT_CODE}"
+
+set +x
+set +e
+OUTPUT="$(NVM_SKIP_CHECKSUM=1 nvm_compare_checksum ../../../nvm.sh checksum 2>&1 >/dev/null)"
+EXIT_CODE="$(NVM_SKIP_CHECKSUM=1 nvm_compare_checksum ../../../nvm.sh checksum >/dev/null 2>&1 ; echo $?)"
+set -e
+set -x
+EXPECTED_OUTPUT="Computed checksum of '../../../nvm.sh' is empty.
+WARNING: No checksum binary found; skipping checksum verification because NVM_SKIP_CHECKSUM is set."
 [ "${OUTPUT}" = "${EXPECTED_OUTPUT}" ] || die "expected >${EXPECTED_OUTPUT}<, got >${OUTPUT}<"
 [ "${EXIT_CODE}" = 0 ] || die "expected to exit with code 0, got ${EXIT_CODE}"
+
+nvm_get_checksum_binary() {
+  echo sha256sum
+}
+
+set +x
+set +e
+OUTPUT="$(nvm_compare_checksum ../../../nvm.sh checksum 2>&1 >/dev/null || echo)"
+EXIT_CODE="$(nvm_compare_checksum ../../../nvm.sh checksum >/dev/null 2>&1 || echo $?)"
+set -e
+set -x
+EXPECTED_OUTPUT="Computed checksum of '../../../nvm.sh' is empty.
+ERROR: Checksum computation failed."
+[ "${OUTPUT}" = "${EXPECTED_OUTPUT}" ] || die "expected >${EXPECTED_OUTPUT}<, got >${OUTPUT}<"
+[ "${EXIT_CODE}" = 5 ] || die "expected to exit with code 5, got ${EXIT_CODE}"
 
 nvm_compute_checksum() {
   echo "not checksum: ${1}"

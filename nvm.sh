@@ -1864,9 +1864,19 @@ nvm_compare_checksum() {
   fi
 
   if [ -z "${COMPUTED_SUM}" ]; then
-    nvm_err "Computed checksum of '${FILE}' is empty." # missing in raspberry pi binary
-    nvm_err 'WARNING: Continuing *without checksum verification*'
-    return
+    local NVM_CHECKSUM_BIN
+    NVM_CHECKSUM_BIN="$(nvm_get_checksum_binary 2>/dev/null)"
+    nvm_err "Computed checksum of '${FILE}' is empty."
+    if [ -z "${NVM_CHECKSUM_BIN}" ]; then
+      if [ -n "${NVM_SKIP_CHECKSUM-}" ]; then
+        nvm_err 'WARNING: No checksum binary found; skipping checksum verification because NVM_SKIP_CHECKSUM is set.'
+        return 0
+      fi
+      nvm_err 'ERROR: No checksum binary found. Aborting.'
+      return 5
+    fi
+    nvm_err 'ERROR: Checksum computation failed.'
+    return 5
   elif [ "${COMPUTED_SUM}" != "${CHECKSUM}" ] && [ "${COMPUTED_SUM}" != "\\${CHECKSUM}" ]; then
     nvm_err "Checksums do not match: '${COMPUTED_SUM}' found, '${CHECKSUM}' expected."
     return 1
